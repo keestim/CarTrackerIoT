@@ -1,7 +1,8 @@
 from OBDDefinitions import * 
 from GPSReader import *
+from SQLConnection import * 
 
-import MYSQLDb
+import MySQLdb
 
 #pass in SQL connection?
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
@@ -19,8 +20,11 @@ GPSValues = GPSReader("/dev/ttyS0")
 
 #check db name!
 #maybe have a shell script to auto add tables, etc
-dbConn = MYSQLDb.connect("localhost", "pi", "", "CarTracker")  or ("Could not connect to database")
-print(dbConn)
+
+
+SQLInfo = SQLConnection("SQLInfo.txt")
+
+
 
 #need to store journey pk 
 #need to know when to record start position, etc
