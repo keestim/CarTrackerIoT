@@ -24,7 +24,7 @@ class OBDData:
         
         #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
         if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
-            try: z
+            try:
                 dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
             finally:
                 msgComponents = dataStr.split(" ")

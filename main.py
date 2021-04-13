@@ -12,6 +12,7 @@ def persistDataToDB(dbConn, GPSString, Speed, RPM):
         cursor.close()
 
 RPMReader = RPM('/dev/rfcomm0')
+GPSValues = GPSReader("/dev/ttyS0")
 
 #ensure that user name and password and stored in external file
 #THAT'S NOT TRACKED BY GIT
@@ -24,6 +25,7 @@ print(dbConn)
 #need to store journey pk 
 #need to know when to record start position, etc
 
+#create class for gps?
 
 while True:
     # test this
