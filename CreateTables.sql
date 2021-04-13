@@ -12,7 +12,6 @@ CREATE TABLE JourneyDetails(
   longitude FLOAT(4),
   speed INT,
   RPM INT,
-  gear INT,
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
 
