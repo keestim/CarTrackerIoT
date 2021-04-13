@@ -2,43 +2,51 @@ import serial
 from time import sleep
 import sys
 
+class GPSReader:
+    def __init__(self, serialPort):
+        self.serialPort = serialPort
+        self.serialConnection = serial.Serial(serialPort)
+
+        self.GPGGAInfo = "$GPGGA,"
+        self.GPGGABuffer = []
+        self.NMEABuffer = []
+
+    def convertToDegrees(rawValue):
+        decimalValue = rawValue/100.00
+        degrees = int(decimalValue)
+
+        #what is mm_mmmm
+        #something to do with rounding!
+
+        mm_mmmm = (decimalValue - int(decimalValue))/0.6
+        position = degrees + mm_mmmm
+        position = "%.4f" %(position)
+        return float(position)
+
+    def getGPSString():
+        serialData = str(self.serialConnection.readline())
+        GPGGADataAvailable = serialData.find(self.GPGGAInfo)   #check for NMEA GPGGA string   
+
+        if (GPGGADataAvailable > 0):
+            self.GPGGABuffer = received_data.split("$GPGGA,",1)[1]  #store data coming after “$GPGGA,” string
+            self.NMEABuffer = (self.GPGGABuffer.split(','))
+            
+            NMEATime = []
+            NMEALatitude = []
+            NMEALongitude = []
+            
+            NMEATime = self.NMEABuffer[0]                    #extract time from GPGGA string
+            NMEALatitude = self.NMEABuffer[1]                #extract latitude from GPGGA string
+            NMEALongitude = self.NMEABuffer[3]               #extract longitude from GPGGA string
+
+            latitude = convertToDegrees(float(NMEALatitude))
+            longitude = convert_to_degrees(float(NMEALongitude))
+            
+            latitude *= (1 if (self.NMEABuffer[4] == "W") else -1)
+            longitude *= (1 if (self.NMEABuffer[2] == "S") else -1)
+            
+            return str(latitude) + "," + str(longitude)
+        else:
+            return ""
+  
 ser = serial.Serial("/dev/ttyS0")
-gpgga_info = "$GPGGA,"
-GPGGA_buffer = 0
-NMEA_buff = 0
-
-def convert_to_degrees(raw_value):
-    decimal_value = raw_value/100.00
-    degrees = int(decimal_value)
-    mm_mmmm = (decimal_value - int(decimal_value))/0.6
-    position = degrees + mm_mmmm
-    position = "%.4f" %(position)
-    return float(position)
-
-def get_gps_string():
-    received_data = (str)(ser.readline()) #read NMEA string received
-    GPGGA_data_available = received_data.find(gpgga_info)   #check for NMEA GPGGA string                
-    if (GPGGA_data_available > 0):
-        GPGGA_buffer = received_data.split("$GPGGA,",1)[1]  #store data coming after “$GPGGA,” string
-        NMEA_buff = (GPGGA_buffer.split(','))
-        nmea_time = []
-        nmea_latitude = []
-        nmea_longitude = []
-        
-        nmea_time = NMEA_buff[0]                    #extract time from GPGGA string
-        nmea_latitude = NMEA_buff[1]                #extract latitude from GPGGA string
-        nmea_longitude = NMEA_buff[3]               #extract longitude from GPGGA string
-
-        lat = (float)(nmea_latitude)
-        lat = convert_to_degrees(lat)
-        longi = (float)(nmea_longitude)
-        longi = convert_to_degrees(longi)
-        
-        lat *= (1 if (NMEA_buff[4] == "W") else -1)
-        longi *= (1 if (NMEA_buff[2] == "S") else -1)
-        
-        return str(lat) + "," + str(longi)
-    else:
-        #maybe have some handling for this!
-        return "no data yet"
-               
