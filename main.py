@@ -1,6 +1,7 @@
 from OBDDefinitions import * 
 from GPSReader import *
 from SQLConnection import * 
+from TrafficAPIConnection import *
 
 import MySQLdb
 
@@ -41,4 +42,6 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 while True:
     # test this
     print(get_gps_string())
+    print(GetSpeedLimit(get_gps_string()))
+
 
