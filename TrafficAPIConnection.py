@@ -15,3 +15,6 @@ def GetSpeedLimit(CoordinatesString):
         return speedLimit
     else:
         print("api request failed!")
+
+#example usage:
+#print(GetSpeedLimit("-37.799454954912115,145.14715608507657"))
