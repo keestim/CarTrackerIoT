@@ -11,7 +11,7 @@ class GPSReader:
         self.GPGGABuffer = []
         self.NMEABuffer = []
 
-    def convertToDegrees(rawValue):
+    def convertToDegrees(self, rawValue):
         decimalValue = rawValue/100.00
         degrees = int(decimalValue)
 
@@ -23,12 +23,12 @@ class GPSReader:
         position = "%.4f" %(position)
         return float(position)
 
-    def getGPSString():
+    def getGPSString(self):
         serialData = str(self.serialConnection.readline())
         GPGGADataAvailable = serialData.find(self.GPGGAInfo)   #check for NMEA GPGGA string   
 
         if (GPGGADataAvailable > 0):
-            self.GPGGABuffer = received_data.split("$GPGGA,",1)[1]  #store data coming after “$GPGGA,” string
+            self.GPGGABuffer = serialData.split("$GPGGA,",1)[1]  #store data coming after “$GPGGA,” string
             self.NMEABuffer = (self.GPGGABuffer.split(','))
             
             NMEATime = []
@@ -39,8 +39,8 @@ class GPSReader:
             NMEALatitude = self.NMEABuffer[1]                #extract latitude from GPGGA string
             NMEALongitude = self.NMEABuffer[3]               #extract longitude from GPGGA string
 
-            latitude = convertToDegrees(float(NMEALatitude))
-            longitude = convert_to_degrees(float(NMEALongitude))
+            latitude = self.convertToDegrees(float(NMEALatitude))
+            longitude = self.convertToDegrees(float(NMEALongitude))
             
             latitude *= (1 if (self.NMEABuffer[4] == "W") else -1)
             longitude *= (1 if (self.NMEABuffer[2] == "S") else -1)
@@ -48,5 +48,4 @@ class GPSReader:
             return str(latitude) + "," + str(longitude)
         else:
             return ""
-  
-ser = serial.Serial("/dev/ttyS0")
+

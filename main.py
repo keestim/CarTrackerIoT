@@ -4,6 +4,13 @@ from SQLConnection import *
 from TrafficAPIConnection import *
 
 import MySQLdb
+import threading
+import logging
+
+import asyncio
+
+
+from time import sleep
 
 #db = CarTrackingData 
 
@@ -32,6 +39,7 @@ GPSValues = GPSReader("/dev/ttyS0")
 
 SQLInfo = SQLConnection("SQLInfo.txt")
 
+#initalise with a "start" value!
 
 
 #need to store journey pk 
@@ -39,9 +47,16 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 
 #create class for gps?
 
+
+#USE THIS GUIDE:
+#https://stackoverflow.com/questions/52246796/await-a-method-and-assign-a-variable-to-the-returned-value-with-asyncio
 while True:
-    # test this
-    print(get_gps_string())
-    print(GetSpeedLimit(get_gps_string()))
+    print(GPSValues.getGPSString())
+    coordinatesString = await GPSValues.getGPSString()
+    print("coords: " +  coordinatesString)
+
+    
+    
+    
 
 
