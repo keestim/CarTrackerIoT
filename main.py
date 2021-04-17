@@ -4,6 +4,8 @@ from SQLConnection import *
 
 import MySQLdb
 
+#db = CarTrackingData 
+
 #pass in SQL connection?
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
     with dbConn:
