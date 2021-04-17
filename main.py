@@ -6,6 +6,11 @@ import MySQLdb
 
 #db = CarTrackingData 
 
+#need mutliple persist functions
+#1 - Start of Journey
+#2 - Standard Journey recording
+#3 - Over the speed limit journey
+
 #pass in SQL connection?
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
     with dbConn:
