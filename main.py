@@ -3,13 +3,10 @@ from GPSReader import *
 from SQLConnection import * 
 from TrafficAPIConnection import *
 
-import MySQLdb
-import threading
-import logging
-
-import asyncio
-
+from threading import Thread
 from time import sleep
+import MySQLdb
+import logging
 
 #db = CarTrackingData 
 
@@ -19,15 +16,63 @@ from time import sleep
 #3 - Over the speed limit journey
 
 #pass in SQL connection?
+
+class GPSDataThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.daemon = True
+        self.GPSObj = GPSReader("/dev/ttyS0")
+        self.coordinates = ""
+        self.speedLimit = 0
+        
+        self.start()
+    
+    def getGPSCoordinates(self):
+        outputCoordinates = ""
+        
+        #loops until an actual value is received!
+        while (outputCoordinates == ""):
+            outputCoordinates = self.GPSObj.getGPSString()
+        
+        return outputCoordinates
+        
+    def run(self):
+        while True:
+            self.coordinates = self.getGPSCoordinates()        
+            self.speedLimit = GetSpeedLimit(self.coordinates)
+            
+class RPMDataThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.daemon = True
+        self.RPMReaderObj = RPM('/dev/rfcomm0')
+        self.RPM = 0
+        
+        self.start()
+        
+    def run(self):
+        while True:
+            self.RPM = self.RPMReaderObj.requestSerialData()        
+
+class SpeedDataThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.daemon = True
+        self.SpeedReaderObj = Speed('/dev/rfcomm0')
+        self.speed = 0
+        
+        self.start()
+        
+    def run(self):
+        while True:
+            self.speed = self.SpeedReaderObj.requestSerialData()
+
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
     with dbConn:
         cursor = dbConn.cursor()
         cusrsor.execute()
         dbConn.commit()
         cursor.close()
-
-RPMReader = RPM('/dev/rfcomm0')
-GPSValues = GPSReader("/dev/ttyS0")
 
 #ensure that user name and password and stored in external file
 #THAT'S NOT TRACKED BY GIT
@@ -43,21 +88,16 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 
 #need to store journey pk 
 #need to know when to record start position, etc
-
-coordinatesSpeedLimit = 0
-
-def getGPSCoordinates():
-    outputCoordinates = ""
-    
-    #loops until an actual value is received!
-    while (outputCoordinates == ""):
-        outputCoordinates = GPSValues.getGPSString()
-    
-    return outputCoordinates
-
-
-#working!!
+ 
+     
+GPSThread = GPSDataThread()
+RPMThread = RPMDataThread()
+SpeedThread = SpeedDataThread()
+     
 while True:
-    coordinates = getGPSCoordinates()
-    print(coordinates)
-    print(GetSpeedLimit(coordinates))
+    #may check if the thread is active?
+    print(GPSThread.coordinates)
+    print(GPSThread.speedLimit)
+    sleep(1)
+    
+

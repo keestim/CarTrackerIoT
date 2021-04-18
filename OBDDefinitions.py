@@ -17,12 +17,19 @@ class OBDData:
 
         return hexValueArray
 
-    def requestSerialData():
+    def requestSerialData(self):
         #test this!!!!
-        self.serialConnection.write(b'' + pidCode + '\r\n')
+                
+        self.serialConnection.write(b'' + self.pidCode.encode("utf-8") + b'\r\n')
         time.sleep(1)
         
         #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
+        
+        #need to handle:
+        #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
+        #OSError: [Errno 5] Input/output error
+        #ADD TRY-EXCEPTION BLOCK!
+        
         if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
             try:
                 dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
