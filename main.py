@@ -9,7 +9,6 @@ import logging
 
 import asyncio
 
-
 from time import sleep
 
 #db = CarTrackingData 
@@ -45,18 +44,20 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 #need to store journey pk 
 #need to know when to record start position, etc
 
-#create class for gps?
+coordinatesSpeedLimit = 0
+
+def getGPSCoordinates():
+    outputCoordinates = ""
+    
+    #loops until an actual value is received!
+    while (outputCoordinates == ""):
+        outputCoordinates = GPSValues.getGPSString()
+    
+    return outputCoordinates
 
 
-#USE THIS GUIDE:
-#https://stackoverflow.com/questions/52246796/await-a-method-and-assign-a-variable-to-the-returned-value-with-asyncio
+#working!!
 while True:
-    print(GPSValues.getGPSString())
-    coordinatesString = await GPSValues.getGPSString()
-    print("coords: " +  coordinatesString)
-
-    
-    
-    
-
-
+    coordinates = getGPSCoordinates()
+    print(coordinates)
+    print(GetSpeedLimit(coordinates))
