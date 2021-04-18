@@ -90,9 +90,15 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 #need to know when to record start position, etc
  
      
+#add mutli threading?
+     
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
 SpeedThread = SpeedDataThread()
+
+
+
+#maybe have an enum to dictate states?
      
 while True:
     #may check if the thread is active?
