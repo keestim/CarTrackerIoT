@@ -66,7 +66,7 @@ class Speed(OBDData):
         super().__init__(serialPort, '010D', 1)
 
     def getProcessedValue(self, dataArray):
-        return dataArray[0]
+        return dataArray[1]
 
 
 class RPM(OBDData):

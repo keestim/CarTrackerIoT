@@ -8,6 +8,8 @@ from time import sleep
 import MySQLdb
 import logging
 
+import datetime
+
 #db = CarTrackingData 
 
 #need mutliple persist functions
@@ -16,6 +18,11 @@ import logging
 #3 - Over the speed limit journey
 
 #pass in SQL connection?
+import enum
+
+class RecordingState(enum.Enum):
+    Init = 1
+    Moving = 2
 
 class GPSDataThread(Thread):
     def __init__(self):
@@ -53,7 +60,7 @@ class RPMDataThread(Thread):
     def run(self):
         while True:
             tempRPM = self.RPMReaderObj.requestSerialData()
-            if tempRPM != "":
+            if (tempRPM != "") and (tempRPM is not None):
                 self.RPM = tempRPM
 
 class SpeedDataThread(Thread):
@@ -68,7 +75,7 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
-            if tempSpeed != "":
+            if (tempSpeed != "") and (tempSpeed is not None):
                 self.speed = tempSpeed
 
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
@@ -95,21 +102,49 @@ SQLInfo = SQLConnection("SQLInfo.txt")
  
      
 #add mutli threading?
+
+
+#potentially have some kind of lock!
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
-#SpeedThread = SpeedDataThread()
+SpeedThread = SpeedDataThread()
 
 
 
 #maybe have an enum to dictate states?
-     
+
+vehicleRecordingState = RecordingState.Init
+
 while True:
     #may check if the thread is active?
-    #print(GPSThread.coordinates)
-    #print(GPSThread.speedLimit)
-    print("RPM: ")
-    print(RPMThread.RPM)
-    sleep(1)
-    
+    if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
+        print(GPSThread.coordinates)
+        coordinates_values = GPSThread.coordinates.split(",")
+        print(coordinates_values)
+        
+        longitude = coordinates_values[0]
+        latitude = coordinates_values[1]
+        
+        #print(GPSThread.speedLimit)
+        
+        print("RPM: ")
+        print(RPMThread.RPM)
+        print("Speed: ")
+        print(SpeedThread.speed)
+        sleep(2)   
+
+        
+        if vehicleRecordingState == RecordingState.Init:
+            #move to other class
+            cursor = SQLInfo.dbConn.cursor()
+            cursor.execute("INSERT INTO Journeys (startLatitude, startLongitude, startTime) VALUES (" + longitude + ", " + latitude + ", " + datetime.datetime.now()
+     + ")")
+            
+            SQLInfo.dbConn.commit()
+            cursor.close()
+            
+            print("Added Data")
+            
+            vehicleRecordingState = RecordingState.Moving
 
