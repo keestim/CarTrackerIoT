@@ -18,7 +18,7 @@ CREATE TABLE JourneyDetails (
   speed INT,
   RPM INT,
   time DATETIME NOT NULL,
-  PRIMARY KEY (`journeyInstanceID`)
+  PRIMARY KEY (`journeyInstanceID`),
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
 
@@ -30,6 +30,6 @@ CREATE TABLE SpeedingOccurances (
   speedLimit INT,
   RPM INT,
   time DATETIME NOT NULL,
-  PRIMARY KEY (`speedingOccuranceID`)
+  PRIMARY KEY (`speedingOccuranceID`),
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
