@@ -99,22 +99,15 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 
 #need to store journey pk 
 #need to know when to record start position, etc
- 
-     
-#add mutli threading?
 
-
-#potentially have some kind of lock!
+#potentially have some kind of lock to serial BT threads!
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
 SpeedThread = SpeedDataThread()
 
-
-
-#maybe have an enum to dictate states?
-
 vehicleRecordingState = RecordingState.Init
+journeyID = 0
 
 while True:
     #may check if the thread is active?
@@ -125,26 +118,52 @@ while True:
         
         longitude = coordinates_values[0]
         latitude = coordinates_values[1]
-        
-        #print(GPSThread.speedLimit)
-        
-        print("RPM: ")
-        print(RPMThread.RPM)
-        print("Speed: ")
-        print(SpeedThread.speed)
+   
         sleep(2)   
-
-        
+     
         if vehicleRecordingState == RecordingState.Init:
             #move to other class
             cursor = SQLInfo.dbConn.cursor()
-            cursor.execute("INSERT INTO Journeys (startLatitude, startLongitude, startTime) VALUES (" + longitude + ", " + latitude + ", " + datetime.datetime.now()
-     + ")")
+            cursor.execute(
+                "INSERT INTO Journeys " +
+                " (startLatitude, startLongitude, startTime) " +
+                " VALUES " +
+                "(" +
+                longitude + ", " +
+                latitude + ", " +
+                "'" + str(datetime.datetime.now()) + "'); ")
             
             SQLInfo.dbConn.commit()
+            
+            journeyID = cursor.lastrowid
+            print(journeyID)
+            
             cursor.close()
             
             print("Added Data")
             
             vehicleRecordingState = RecordingState.Moving
-
+        elif (vehicleRecordingState == RecordingState.Moving):
+            cursor = SQLInfo.dbConn.cursor()
+     
+            print("Instance Data")
+            
+            cursor.execute(
+                "INSERT INTO JourneyDetails " +
+                " (journeyID, latitude, longitude, speed, RPM, time) " +
+                " VALUES " +
+                "(" +
+                str(journeyID) + ", " +
+                str(float(longitude)) + ", " +
+                str(float(latitude)) + ", " +
+                str(int(SpeedThread.speed)) + ", " +
+                str(int(RPMThread.RPM)) + ", " +
+                "'" + str(datetime.datetime.now()) + "'); ")
+            
+            SQLInfo.dbConn.commit()
+            
+            journeyID = cursor.lastrowid
+            print(journeyID)
+            
+            cursor.close()   
+            
