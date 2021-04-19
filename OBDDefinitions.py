@@ -9,6 +9,11 @@ class OBDData:
         self.serialPort = serialPort
         self.serialConnection = serial.Serial(serialPort, timeout=1, baudrate=10400)
 
+        #Thread locking info
+        #https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php
+        self.lock = threading.Lock()
+        self.value = start
+
     def convertHexValues(self, msgComponents):
         hexValueArray = []
         
@@ -21,44 +26,49 @@ class OBDData:
         return dataArray[0]
 
     def requestSerialData(self):
+        self.lock.acquire()
         try:
-            print(self.pidCode.encode('utf_8') + b'\r\n')
-            self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
-        except:
-            print("Serial Connection unable to write!")
+            logging.debug('Acquired a lock')
+            self.value = self.value + 1
         finally:
-            time.sleep(1)
-        
-            #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
-            
-            #need to handle:
-            #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
-            #OSError: [Errno 5] Input/output error
-            #ADD TRY-EXCEPTION BLOCK!
-            msgComponents = ""
-            
             try:
-                if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
-                    dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
-                    
-                    if self.pidCode not in dataStr:
-                        return                        
-                    
-                    msgComponents = dataStr.split(" ")
-                    print(msgComponents)
-
+                print(self.pidCode.encode('utf_8') + b'\r\n')
+                self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
             except:
-                print("No bytes received from serial connection!")
-        
-            if (len(msgComponents) > 2):
-                print("entering critical section")
-                print(msgComponents)
+                print("Serial Connection unable to write!")
+            finally:
+                time.sleep(1)
+            
+                #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
                 
-                #remove first and last elements as they are noise
-                msgComponents.pop(0)
-                msgComponents.pop(len(msgComponents) - 1)
+                #need to handle:
+                #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
+                #OSError: [Errno 5] Input/output error
+                #ADD TRY-EXCEPTION BLOCK!
+                msgComponents = ""
+                
+                try:
+                    if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
+                        dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
+                        
+                        if self.pidCode not in dataStr:
+                            return                        
+                        
+                        msgComponents = dataStr.split(" ")
+                        print(msgComponents)
 
-                return self.getProcessedValue(self.convertHexValues(msgComponents))
+                except:
+                    print("No bytes received from serial connection!")
+            
+                if (len(msgComponents) > 2):
+                    print("entering critical section")
+                    print(msgComponents)
+                    
+                    #remove first and last elements as they are noise
+                    msgComponents.pop(0)
+                    msgComponents.pop(len(msgComponents) - 1)
+
+                    return self.getProcessedValue(self.convertHexValues(msgComponents))
   
 
 class Speed(OBDData):

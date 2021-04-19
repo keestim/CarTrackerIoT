@@ -25,7 +25,8 @@ CREATE TABLE JourneyDetails (
 CREATE TABLE SpeedingOccurances (
   speedingOccuranceID INT UNSIGNED NOT NULL AUTO_INCREMENT,
   journeyID INT UNSIGNED NOT NULL,
-  occuranceTime DATETIME,
+  latitude FLOAT(4),
+  longitude FLOAT(4),
   speed INT,
   speedLimit INT,
   RPM INT,
