@@ -46,9 +46,3 @@ while True:
                     
                     
         
-    #print(list(ser.readlines()))
-    
-
-
-
-S

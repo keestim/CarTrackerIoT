@@ -52,7 +52,9 @@ class RPMDataThread(Thread):
         
     def run(self):
         while True:
-            self.RPM = self.RPMReaderObj.requestSerialData()        
+            tempRPM = self.RPMReaderObj.requestSerialData()
+            if tempRPM != "":
+                self.RPM = tempRPM
 
 class SpeedDataThread(Thread):
     def __init__(self):
@@ -65,7 +67,9 @@ class SpeedDataThread(Thread):
         
     def run(self):
         while True:
-            self.speed = self.SpeedReaderObj.requestSerialData()
+            tempSpeed = self.SpeedReaderObj.requestSerialData()
+            if tempSpeed != "":
+                self.speed = tempSpeed
 
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
     with dbConn:
@@ -94,7 +98,7 @@ SQLInfo = SQLConnection("SQLInfo.txt")
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
-SpeedThread = SpeedDataThread()
+#SpeedThread = SpeedDataThread()
 
 
 
@@ -102,8 +106,10 @@ SpeedThread = SpeedDataThread()
      
 while True:
     #may check if the thread is active?
-    print(GPSThread.coordinates)
-    print(GPSThread.speedLimit)
+    #print(GPSThread.coordinates)
+    #print(GPSThread.speedLimit)
+    print("RPM: ")
+    print(RPMThread.RPM)
     sleep(1)
     
 
