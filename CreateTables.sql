@@ -1,3 +1,7 @@
+CREATE DATABASE CarTrackingData;
+
+USE CarTrackingData;
+
 CREATE TABLE Journeys (
   journeyID INT UNSIGNED NOT NULL AUTO_INCREMENT,
   startLatitude FLOAT(4),
@@ -6,12 +10,13 @@ CREATE TABLE Journeys (
   PRIMARY KEY (`journeyID`)
 );
 
-CREATE TABLE JourneyDetails(
+CREATE TABLE JourneyDetails (
   journeyID INT UNSIGNED NOT NULL,
   latitude FLOAT(4),
   longitude FLOAT(4),
   speed INT,
   RPM INT,
+  time DATETIME NOT NULL,
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
 
@@ -21,5 +26,6 @@ CREATE TABLE SpeedingOccurances (
   speed INT,
   speedLimit INT,
   RPM INT,
+  time DATETIME NOT NULL,
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
