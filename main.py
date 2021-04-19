@@ -122,11 +122,9 @@ while True:
         print(coordinates_values)
         
         longitude = coordinates_values[0]
-        latitude = coordinates_values[1]
-   
-        sleep(2)   
+        latitude = coordinates_values[1]  
      
-        if vehicleRecordingState == RecordingState.Init:
+        if vehicleRecordingState == RecordingState.Init and SpeedThread.speed > 0:
             #move to other class
             cursor = SQLInfo.dbConn.cursor()
             cursor.execute(
@@ -134,9 +132,10 @@ while True:
                 " (startLatitude, startLongitude, startTime) " +
                 " VALUES " +
                 "(" +
-                longitude + ", " +
-                latitude + ", " +
-                "'" + str(datetime.datetime.now()) + "'); ")
+                    longitude + ", " +
+                    latitude + ", " +
+                    "'" + str(datetime.datetime.now()) + "'" + 
+                "); ")
             
             SQLInfo.dbConn.commit()
             
@@ -159,25 +158,47 @@ while True:
                 " (journeyID, latitude, longitude, speed, RPM, time) " +
                 " VALUES " +
                 "(" +
-                str(journeyID) + ", " +
-                str(float(longitude)) + ", " +
-                str(float(latitude)) + ", " +
-                str(int(SpeedThread.speed)) + ", " +
-                str(int(RPMThread.RPM)) + ", " +
-                "'" + str(datetime.datetime.now()) + "'); ")
+                    str(journeyID) + ", " +
+                    str(float(longitude)) + ", " +
+                    str(float(latitude)) + ", " +
+                    str(int(SpeedThread.speed)) + ", " +
+                    str(int(RPMThread.RPM)) + ", " +
+                    "'" + str(datetime.datetime.now()) + "'" +
+                "); ")
             
             cursor.execute(
                 "INSERT INTO JourneyDetails " +
                 " (journeyID, latitude, longitude, speed, RPM, time) " +
                 " VALUES " +
                 "(" +
-                str(journeyID) + ", " +
-                str(float(longitude)) + ", " +
-                str(float(latitude)) + ", " +
-                str(int(SpeedThread.speed)) + ", " +
-                str(int(RPMThread.RPM)) + ", " +
-                "'" + str(datetime.datetime.now()) + "'); ")
+                    str(journeyID) + ", " +
+                    str(float(longitude)) + ", " +
+                    str(float(latitude)) + ", " +
+                    str(int(SpeedThread.speed)) + ", " +
+                    str(int(RPMThread.RPM)) + ", " +
+                    "'" + str(datetime.datetime.now()) + "'" +
+                "); ")
             
             SQLInfo.dbConn.commit()
             cursor.close()   
-            
+
+            if SpeedThread.speed > GPSThread.speedLimit:
+                cursor = SQLInfo.dbConn.cursor()
+
+                cursor.execute(
+                    "INSERT INTO JourneyDetails " +
+                    " (journeyID, latitude, longitude, speed, speedLimit, RPM, time) " +
+                    " VALUES " +
+                    "(" +
+                    str(journeyID) + ", " +
+                    str(float(longitude)) + ", " +
+                    str(float(latitude)) + ", " +
+                    str(int(SpeedThread.speed)) + ", " +
+                    str(int(GPSThread.speedLimit)) + ", " +
+                    str(int(RPMThread.RPM)) + ", " +
+                    "'" + str(datetime.datetime.now()) + "'); ")
+
+                SQLInfo.dbConn.commit()
+                cursor.close()   
+
+        sleep(2) 
