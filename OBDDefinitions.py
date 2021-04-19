@@ -18,10 +18,10 @@ class OBDData:
         return hexValueArray
 
     def requestSerialData(self):
-        try:        
-            self.serialConnection.write(b'' + self.pidCode.encode("utf-8") + b'\r\n')
+        try:
+            self.serialConnection.write(self.pidCode)
         except:
-            print("OBD Device not successfully connected!")
+            print("Serial Connection unable to write!")
         finally:
             time.sleep(1)
         
@@ -43,11 +43,12 @@ class OBDData:
                         
                         return getProcessedValue(convertHexValues(msgComponents))
             except:
-                print("OBD Device not successfully connected!")    
+                print("Not bytes received from serial connection!")    
 
 class Speed(OBDData):
     def __init__(self, serialPort):
-        super().__init__(serialPort, "010D", 1)
+        
+        super().__init__(serialPort, b'010D\r\n', 1)
 
     def getProcessedValue(dataArray):
         return dataArray[0]
@@ -55,7 +56,7 @@ class Speed(OBDData):
 
 class RPM(OBDData):
     def __init__(self, serialPort):
-        super().__init__(serialPort, "010C", 2)
+        super().__init__(serialPort, b'010C\r\n', 2)
 
     def getProcessedValue(dataArray):
         return (256 * dataArray[0] + dataArray[1])/4
