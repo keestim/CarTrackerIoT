@@ -135,7 +135,8 @@ while True:
             
             SQLInfo.dbConn.commit()
             
-            journeyID = cursor.lastrowid
+            journeyID = cursor.execute('select last_insert_id() from Journeys')
+            print("Journey ID:")
             print(journeyID)
             
             cursor.close()
@@ -143,10 +144,22 @@ while True:
             print("Added Data")
             
             vehicleRecordingState = RecordingState.Moving
+            
         elif (vehicleRecordingState == RecordingState.Moving):
             cursor = SQLInfo.dbConn.cursor()
      
             print("Instance Data")
+            
+            print("INSERT INTO JourneyDetails " +
+                " (journeyID, latitude, longitude, speed, RPM, time) " +
+                " VALUES " +
+                "(" +
+                str(journeyID) + ", " +
+                str(float(longitude)) + ", " +
+                str(float(latitude)) + ", " +
+                str(int(SpeedThread.speed)) + ", " +
+                str(int(RPMThread.RPM)) + ", " +
+                "'" + str(datetime.datetime.now()) + "'); ")
             
             cursor.execute(
                 "INSERT INTO JourneyDetails " +
@@ -161,9 +174,5 @@ while True:
                 "'" + str(datetime.datetime.now()) + "'); ")
             
             SQLInfo.dbConn.commit()
-            
-            journeyID = cursor.lastrowid
-            print(journeyID)
-            
             cursor.close()   
             
