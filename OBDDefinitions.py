@@ -18,30 +18,32 @@ class OBDData:
         return hexValueArray
 
     def requestSerialData(self):
-        #test this!!!!
-                
-        self.serialConnection.write(b'' + self.pidCode.encode("utf-8") + b'\r\n')
-        time.sleep(1)
+        try:        
+            self.serialConnection.write(b'' + self.pidCode.encode("utf-8") + b'\r\n')
+        except:
+            print("OBD Device not successfully connected!")
+        finally:
+            time.sleep(1)
         
-        #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
-        
-        #need to handle:
-        #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
-        #OSError: [Errno 5] Input/output error
-        #ADD TRY-EXCEPTION BLOCK!
-        
-        if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
+            #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
+            
+            #need to handle:
+            #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
+            #OSError: [Errno 5] Input/output error
+            #ADD TRY-EXCEPTION BLOCK!
             try:
-                dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
-            finally:
-                msgComponents = dataStr.split(" ")
+                if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
+                    dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
+                    msgComponents = dataStr.split(" ")
 
-                if (len(msgComponents) >= 2):
-                    #remove first and last elements as they are noise
-                    msgComponents.pop(0)
-                    msgComponents.pop(len(split_str) - 1)
-                    
-                    return getProcessedValue(convertHexValues(msgComponents))
+                    if (len(msgComponents) >= 2):
+                        #remove first and last elements as they are noise
+                        msgComponents.pop(0)
+                        msgComponents.pop(len(split_str) - 1)
+                        
+                        return getProcessedValue(convertHexValues(msgComponents))
+            except:
+                print("OBD Device not successfully connected!")    
 
 class Speed(OBDData):
     def __init__(self, serialPort):
