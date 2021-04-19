@@ -60,6 +60,9 @@ class RPMDataThread(Thread):
     def run(self):
         while True:
             tempRPM = self.RPMReaderObj.requestSerialData()
+            print("RPM")
+            print(tempRPM)
+            
             if (tempRPM != "") and (tempRPM is not None):
                 self.RPM = tempRPM
 
@@ -75,6 +78,8 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
+            
+            
             if (tempSpeed != "") and (tempSpeed is not None):
                 self.speed = tempSpeed
 
