@@ -23,11 +23,13 @@ CREATE TABLE JourneyDetails (
 );
 
 CREATE TABLE SpeedingOccurances (
+  speedingOccuranceID INT UNSIGNED NOT NULL AUTO_INCREMENT,
   journeyID INT UNSIGNED NOT NULL,
   occuranceTime DATETIME,
   speed INT,
   speedLimit INT,
   RPM INT,
   time DATETIME NOT NULL,
+  PRIMARY KEY (`speedingOccuranceID`)
   FOREIGN KEY (`journeyID`) REFERENCES Journeys(`journeyID`)
 );
