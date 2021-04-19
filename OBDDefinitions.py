@@ -41,7 +41,7 @@ class OBDData:
                 if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
                     dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
                     
-                    if dataStr.contains(self.pidCode):
+                    if self.pidCode not in dataStr:
                         return                        
                     
                     msgComponents = dataStr.split(" ")
