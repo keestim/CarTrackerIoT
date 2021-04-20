@@ -9,6 +9,7 @@ print(subscriptionKey)
 def GetSpeedLimit(CoordinatesString):
     if CoordinatesString != "-0.0,-0.0":
         api_url = "https://atlas.microsoft.com/search/address/reverse/json?subscription-key=" + subscriptionKey + "&api-version=1.0&query=" + CoordinatesString + "&returnSpeedLimit=true"
+        print(api_url)
         
         try:
             response = requests.get(api_url)

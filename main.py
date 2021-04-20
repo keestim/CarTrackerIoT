@@ -119,7 +119,6 @@ while True:
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
         print(GPSThread.coordinates)
         coordinates_values = GPSThread.coordinates.split(",")
-        print(coordinates_values)
         
         longitude = coordinates_values[0]
         latitude = coordinates_values[1]  

@@ -1,6 +1,7 @@
 import serial
 import time
 import threading
+import logging
 
 class OBDData:
     def __init__(self, serialPort, pidCode, numBits):
@@ -12,7 +13,7 @@ class OBDData:
         #Thread locking info
         #https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php
         self.lock = threading.Lock()
-        self.value = start
+        self.value = 0
 
     def convertHexValues(self, msgComponents):
         hexValueArray = []
