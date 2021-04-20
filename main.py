@@ -42,6 +42,7 @@ class GPSDataThread(Thread):
         #loops until an actual value is received!
         while (outputCoordinates == ""):
             outputCoordinates = self.GPSObj.getGPSString()
+            sleep(0.5)
         
         return outputCoordinates
         
@@ -64,7 +65,7 @@ class RPMDataThread(Thread):
     def run(self):
         while True:
             tempRPM = self.RPMReaderObj.requestSerialData()
-            sleep(1)
+            sleep(0.2)
             self.RPMReaderObj.sharedLock.release()
             
             print("RPM")
@@ -85,7 +86,7 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
-            sleep(1)
+            sleep(0.2)
             self.SpeedReaderObj.sharedLock.release()            
             
             if (tempSpeed != "") and (tempSpeed is not None):
@@ -186,13 +187,13 @@ while True:
                 "); ")
             
             SQLInfo.dbConn.commit()
-            cursor.close()   
-
+            cursor.close()
+            
             if SpeedThread.speed > GPSThread.speedLimit:
                 cursor = SQLInfo.dbConn.cursor()
 
                 cursor.execute(
-                    "INSERT INTO JourneyDetails " +
+                    "INSERT INTO SpeedingOccurances " +
                     " (journeyID, latitude, longitude, speed, speedLimit, RPM, time) " +
                     " VALUES " +
                     "(" +
@@ -206,5 +207,8 @@ while True:
 
                 SQLInfo.dbConn.commit()
                 cursor.close()   
+
+
+    
 
         sleep(2) 

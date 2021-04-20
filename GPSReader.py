@@ -46,6 +46,9 @@ class GPSReader:
             latitude *= (1 if (self.NMEABuffer[4] == "W") else -1)
             longitude *= (1 if (self.NMEABuffer[2] == "S") else -1)
             
+            self.serialConnection.reset_output_buffer()
+            self.serialConnection.reset_input_buffer()
+
             return str(latitude) + "," + str(longitude)
         else:
             return ""
