@@ -3,12 +3,15 @@ from GPSReader import *
 from SQLConnection import * 
 from TrafficAPIConnection import *
 
+from subprocess import call
+
 from threading import Thread
 from time import sleep
 import MySQLdb
 import logging
 
 import datetime
+from num2words import num2words
 
 #db = CarTrackingData 
 
@@ -21,6 +24,16 @@ import datetime
 import enum
 
 sharedLock = threading.Lock()
+
+class TextToSpeech(Thread):
+    def __init__(self, inputText):
+        super(TextToSpeech, self).__init__()
+        self.outputText = inputText
+        
+    def run(self):
+        cmd_beg= 'espeak '
+        cmd_end= ' 2>/dev/null' # To dump the std errors to /dev/null
+        call([cmd_beg + '"' + self.outputText + '"' + cmd_end], shell=True)
 
 class RecordingState(enum.Enum):
     Init = 1
@@ -123,6 +136,9 @@ SpeedThread = SpeedDataThread()
 vehicleRecordingState = RecordingState.Init
 journeyID = 0
 
+voiceThread = TextToSpeech("Welcome to Car Tracker I O T Device")
+voiceThread.start()
+
 while True:
     #may check if the thread is active?
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
@@ -189,7 +205,17 @@ while True:
             SQLInfo.dbConn.commit()
             cursor.close()
             
+            if RPMThread.RPM > 4000:
+                highRPMVoiceThread = TextToSpeech("High RPM. Consider choosing a higher gear")
+                highRPMVoiceThread.start()            
+            
             if SpeedThread.speed > GPSThread.speedLimit:
+                speedLimitVoiceThread = TextToSpeech(
+                    "Speed Limit is: " + num2words(GPSThread.speedLimit) + "." +
+                    "You exceeding it by: " + num2words(SpeedThread.speed - GPSThread.speedLimit))
+                
+                speedLimitVoiceThread.start()
+                
                 cursor = SQLInfo.dbConn.cursor()
 
                 cursor.execute(
@@ -206,9 +232,8 @@ while True:
                     "'" + str(datetime.datetime.now()) + "'); ")
 
                 SQLInfo.dbConn.commit()
-                cursor.close()   
-
-
-    
+                cursor.close()
+                
+                sleep(1)
 
         sleep(2) 
