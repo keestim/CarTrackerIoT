@@ -49,6 +49,7 @@ class GPSDataThread(Thread):
         while True:
             self.coordinates = self.getGPSCoordinates()        
             self.speedLimit = GetSpeedLimit(self.coordinates)
+            sleep(1)
             
 class RPMDataThread(Thread):
     def __init__(self):
@@ -63,7 +64,7 @@ class RPMDataThread(Thread):
         while True:
             tempRPM = self.RPMReaderObj.requestSerialData()
             sleep(1)
-            #self.RPMReaderObj.lock.release()
+            self.RPMReaderObj.sharedLock.release()
             
             print("RPM")
             print(tempRPM)
@@ -83,8 +84,9 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
-            self.SpeedReaderObj.lock.release()
             
+            sleep(1)
+            self.SpeedReaderObj.sharedLock.release()            
             
             if (tempSpeed != "") and (tempSpeed is not None):
                 self.speed = tempSpeed
@@ -115,7 +117,7 @@ SQLInfo = SQLConnection("SQLInfo.txt")
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
-#SpeedThread = SpeedDataThread()
+SpeedThread = SpeedDataThread()
 
 vehicleRecordingState = RecordingState.Init
 journeyID = 0
@@ -125,6 +127,7 @@ while True:
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
         #print(GPSThread.coordinates)
         coordinates_values = GPSThread.coordinates.split(",")
+        print(coordinates_values)
         
         longitude = coordinates_values[0]
         latitude = coordinates_values[1]  
@@ -149,16 +152,12 @@ while True:
             print(journeyID)
             
             cursor.close()
-            
-            print("Added Data")
-            
+                        
             vehicleRecordingState = RecordingState.Moving
             
         elif (vehicleRecordingState == RecordingState.Moving):
             cursor = SQLInfo.dbConn.cursor()
-     
-            print("Instance Data")
-            
+
             print("INSERT INTO JourneyDetails " +
                 " (journeyID, latitude, longitude, speed, RPM, time) " +
                 " VALUES " +

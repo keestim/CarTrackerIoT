@@ -34,21 +34,18 @@ class OBDData:
 
     def requestSerialData(self):
         print("attempting to acquire a lock")
-        
+
         try:
-            #self.lock.acquire()
-            logging.debug('Acquired a lock')
+            self.sharedLock.acquire()
         finally:
-            #time.sleep(1)
             
             try:
-                print(self.pidCode.encode('utf_8') + b'\r\n')
                 self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
                 
             except:
                 print("Serial Connection unable to write!")
             finally:
-                #time.sleep(1)
+                time.sleep(1)
             
                 #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
                 
@@ -73,24 +70,22 @@ class OBDData:
                 except:
                     print("No bytes received from serial connection!")
             
-                if (len(msgComponents) > 2):
-                    print("entering critical section")
-                    print(msgComponents)
-                    
+                if (len(msgComponents) > 2):              
                     #remove first and last elements as they are noise
                     msgComponents.pop(0)
                     msgComponents.pop(len(msgComponents) - 1)
 
                     return self.getProcessedValue(self.convertHexValues(msgComponents))
                                  
-  
+
 
 class Speed(OBDData):
     def __init__(self, lock, serialPort):
         super().__init__(lock, serialPort, '010D', 1)
 
     def getProcessedValue(self, dataArray):
-        return dataArray[1]
+        if dataArray is not None:
+            return dataArray[1]
 
 
 class RPM(OBDData):
@@ -98,8 +93,5 @@ class RPM(OBDData):
         super().__init__(lock, serialPort, '010C', 2)
 
     def getProcessedValue(self, dataArray):
-        print("getting RPM Value!")
-        
-        print(dataArray)
         return (256 * dataArray[1] + dataArray[2])/4
 
