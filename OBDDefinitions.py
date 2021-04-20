@@ -33,8 +33,6 @@ class OBDData:
         return dataArray[0]
 
     def requestSerialData(self):
-        print("attempting to acquire a lock")
-
         try:
             self.sharedLock.acquire()
         finally:
@@ -74,6 +72,7 @@ class OBDData:
                     #remove first and last elements as they are noise
                     msgComponents.pop(0)
                     msgComponents.pop(len(msgComponents) - 1)
+                    sleep(0.5)
 
                     return self.getProcessedValue(self.convertHexValues(msgComponents))
                                  

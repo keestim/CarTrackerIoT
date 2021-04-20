@@ -47,7 +47,8 @@ class GPSDataThread(Thread):
         
     def run(self):
         while True:
-            self.coordinates = self.getGPSCoordinates()        
+            self.coordinates = self.getGPSCoordinates()
+            sleep(0.5)
             self.speedLimit = GetSpeedLimit(self.coordinates)
             sleep(1)
             
@@ -84,7 +85,6 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
-            
             sleep(1)
             self.SpeedReaderObj.sharedLock.release()            
             
@@ -169,6 +169,8 @@ while True:
                     str(int(RPMThread.RPM)) + ", " +
                     "'" + str(datetime.datetime.now()) + "'" +
                 "); ")
+            
+            print("Speed Limit: " + str(GPSThread.speedLimit))
             
             cursor.execute(
                 "INSERT INTO JourneyDetails " +
