@@ -2,9 +2,10 @@ import serial
 import time
 import threading
 import logging
+from time import sleep
 
 class OBDData:
-    def __init__(self, serialPort, pidCode, numBits):
+    def __init__(self, lock, serialPort, pidCode, numBits):
         self.numBits = numBits
         self.pidCode = pidCode
         self.serialPort = serialPort
@@ -12,33 +13,42 @@ class OBDData:
 
         #Thread locking info
         #https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php
-        self.lock = threading.Lock()
+        #refer to it as "shared" lock!
+        
         self.value = 0
+        self.sharedLock = lock
 
     def convertHexValues(self, msgComponents):
         hexValueArray = []
         
-        for hexString in msgComponents:
-            hexValueArray.append(int(hexString, 16))
+        try:
+            for hexString in msgComponents:
+                hexValueArray.append(int(hexString, 16))
 
-        return hexValueArray
+            return hexValueArray
+        except:
+            return 
     
     def getProcessedValue(self, dataArray):
         return dataArray[0]
 
     def requestSerialData(self):
-        self.lock.acquire()
+        print("attempting to acquire a lock")
+        
         try:
+            #self.lock.acquire()
             logging.debug('Acquired a lock')
-            self.value = self.value + 1
         finally:
+            #time.sleep(1)
+            
             try:
                 print(self.pidCode.encode('utf_8') + b'\r\n')
                 self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
+                
             except:
                 print("Serial Connection unable to write!")
             finally:
-                time.sleep(1)
+                #time.sleep(1)
             
                 #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
                 
@@ -52,7 +62,9 @@ class OBDData:
                     if (self.serialConnection.inWaiting() > 0): #if incoming bytes are waiting to be read from the serial input buffer
                         dataStr = self.serialConnection.read(self.serialConnection.inWaiting()).decode('ascii') #read the bytes and convert from binary array to ASCII
                         
-                        if self.pidCode not in dataStr:
+                        print("Data String")
+                        print(dataStr)
+                        if self.pidCode not in dataStr or "NO" in dataStr:
                             return                        
                         
                         msgComponents = dataStr.split(" ")
@@ -70,19 +82,20 @@ class OBDData:
                     msgComponents.pop(len(msgComponents) - 1)
 
                     return self.getProcessedValue(self.convertHexValues(msgComponents))
+                                 
   
 
 class Speed(OBDData):
-    def __init__(self, serialPort):
-        super().__init__(serialPort, '010D', 1)
+    def __init__(self, lock, serialPort):
+        super().__init__(lock, serialPort, '010D', 1)
 
     def getProcessedValue(self, dataArray):
         return dataArray[1]
 
 
 class RPM(OBDData):
-    def __init__(self, serialPort):
-        super().__init__(serialPort, '010C', 2)
+    def __init__(self, lock, serialPort):
+        super().__init__(lock, serialPort, '010C', 2)
 
     def getProcessedValue(self, dataArray):
         print("getting RPM Value!")

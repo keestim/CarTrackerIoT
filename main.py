@@ -20,6 +20,8 @@ import datetime
 #pass in SQL connection?
 import enum
 
+sharedLock = threading.Lock()
+
 class RecordingState(enum.Enum):
     Init = 1
     Moving = 2
@@ -52,7 +54,7 @@ class RPMDataThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.RPMReaderObj = RPM('/dev/rfcomm0')
+        self.RPMReaderObj = RPM(sharedLock, '/dev/rfcomm0')
         self.RPM = 0
         
         self.start()
@@ -60,6 +62,9 @@ class RPMDataThread(Thread):
     def run(self):
         while True:
             tempRPM = self.RPMReaderObj.requestSerialData()
+            sleep(1)
+            #self.RPMReaderObj.lock.release()
+            
             print("RPM")
             print(tempRPM)
             
@@ -70,7 +75,7 @@ class SpeedDataThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.SpeedReaderObj = Speed('/dev/rfcomm0')
+        self.SpeedReaderObj = Speed(sharedLock, '/dev/rfcomm0')
         self.speed = 0
         
         self.start()
@@ -78,6 +83,7 @@ class SpeedDataThread(Thread):
     def run(self):
         while True:
             tempSpeed = self.SpeedReaderObj.requestSerialData()
+            self.SpeedReaderObj.lock.release()
             
             
             if (tempSpeed != "") and (tempSpeed is not None):
@@ -109,7 +115,7 @@ SQLInfo = SQLConnection("SQLInfo.txt")
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
-SpeedThread = SpeedDataThread()
+#SpeedThread = SpeedDataThread()
 
 vehicleRecordingState = RecordingState.Init
 journeyID = 0
@@ -117,7 +123,7 @@ journeyID = 0
 while True:
     #may check if the thread is active?
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
-        print(GPSThread.coordinates)
+        #print(GPSThread.coordinates)
         coordinates_values = GPSThread.coordinates.split(",")
         
         longitude = coordinates_values[0]
