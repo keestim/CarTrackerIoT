@@ -13,14 +13,6 @@ import logging
 import datetime
 from num2words import num2words
 
-#db = CarTrackingData 
-
-#need mutliple persist functions
-#1 - Start of Journey
-#2 - Standard Journey recording
-#3 - Over the speed limit journey
-
-#pass in SQL connection?
 import enum
 
 sharedLock = threading.Lock()
@@ -112,22 +104,7 @@ def persistDataToDB(dbConn, GPSString, Speed, RPM):
         dbConn.commit()
         cursor.close()
 
-#ensure that user name and password and stored in external file
-#THAT'S NOT TRACKED BY GIT
-
-#check db name!
-#maybe have a shell script to auto add tables, etc
-
-
 SQLInfo = SQLConnection("SQLInfo.txt")
-
-#initalise with a "start" value!
-
-
-#need to store journey pk 
-#need to know when to record start position, etc
-
-#potentially have some kind of lock to serial BT threads!
      
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
@@ -187,8 +164,6 @@ while True:
                     str(int(RPMThread.RPM)) + ", " +
                     "'" + str(datetime.datetime.now()) + "'" +
                 "); ")
-            
-            print("Speed Limit: " + str(GPSThread.speedLimit))
             
             cursor.execute(
                 "INSERT INTO JourneyDetails " +
