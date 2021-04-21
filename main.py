@@ -14,10 +14,17 @@ import datetime
 from num2words import num2words
 
 import enum
+import time
 
 sharedLock = threading.Lock()
 
 speechLock = threading.Lock()
+
+excessRPMOutput = False
+excessSpeedOutput = False
+
+canRequestSpeed = True
+canRequestRPM = True
 
 class TextToSpeech(Thread):
     def __init__(self, inputText):
@@ -28,7 +35,7 @@ class TextToSpeech(Thread):
         cmd_beg= 'espeak '
         cmd_end= ' 2>/dev/null' # To dump the std errors to /dev/null
         call([cmd_beg + '"' + self.outputText + '"' + cmd_end], shell=True)
-        sleep(2)
+        sleep(0.2)
         speechLock.release()  
 
 class RecordingState(enum.Enum):
@@ -58,6 +65,11 @@ class GPSDataThread(Thread):
     def run(self):
         while True:
             self.coordinates = self.getGPSCoordinates()
+            coordinates_values = GPSThread.coordinates.split(",")
+
+            self.longitude = coordinates_values[0]
+            self.latitude = coordinates_values[1]
+
             sleep(0.5)
             self.speedLimit = GetSpeedLimit(self.coordinates)
             sleep(1)
@@ -73,15 +85,16 @@ class RPMDataThread(Thread):
         
     def run(self):
         while True:
-            tempRPM = self.RPMReaderObj.requestSerialData()
-            sleep(0.2)
-            self.RPMReaderObj.sharedLock.release()
-            
-            print("RPM")
-            print(tempRPM)
-            
-            if (tempRPM != "") and (tempRPM is not None):
-                self.RPM = tempRPM
+            if canRequestRPM:
+                tempRPM = self.RPMReaderObj.requestSerialData()
+                sleep(0.2)
+                self.RPMReaderObj.sharedLock.release()
+                
+                if (tempRPM != "") and (tempRPM is not None) and not excessRPMOutput:
+                    self.RPM = tempRPM
+                    canRequestRPM = False
+                    timer = threading.Timer(0.5, AllowOBDRPMRequest)
+                    timer.start()
 
 class SpeedDataThread(Thread):
     def __init__(self):
@@ -94,12 +107,17 @@ class SpeedDataThread(Thread):
         
     def run(self):
         while True:
-            tempSpeed = self.SpeedReaderObj.requestSerialData()
-            sleep(0.2)
-            self.SpeedReaderObj.sharedLock.release()            
-            
-            if (tempSpeed != "") and (tempSpeed is not None):
-                self.speed = tempSpeed
+            if canRequestSpeed:
+                tempSpeed = self.SpeedReaderObj.requestSerialData()
+                sleep(0.2)
+                self.SpeedReaderObj.sharedLock.release()            
+                
+                if (tempSpeed != "") and (tempSpeed is not None) and not excessSpeedOutput:
+                    self.speed = tempSpeed
+                    canRequestSpeed = False
+                    timer = threading.Timer(0.5, AllowOBDSpeedRequest)
+                    timer.start()
+
 
 def persistDataToDB(dbConn, GPSString, Speed, RPM):
     with dbConn:
@@ -107,6 +125,12 @@ def persistDataToDB(dbConn, GPSString, Speed, RPM):
         cusrsor.execute()
         dbConn.commit()
         cursor.close()
+
+def AllowOBDSpeedRequest():
+    canRequestSpeed = True
+
+def AllowOBDRPMRequest():
+    canRequestRPM  = True
 
 SQLInfo = SQLConnection("SQLInfo.txt")
      
@@ -122,19 +146,10 @@ voiceThread = TextToSpeech("Welcome. to. Car. Tracker. I. O. T. Device.")
 voiceThread.start()
 
 while True:
-    #may check if the thread is active?
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
-        #print(GPSThread.coordinates)
-        coordinates_values = GPSThread.coordinates.split(",")
-        print(coordinates_values)
-        
-        longitude = coordinates_values[0]
-        latitude = coordinates_values[1]  
      
         if vehicleRecordingState == RecordingState.Init and SpeedThread.speed > 0:
-            #move to other class
-            cursor = SQLInfo.dbConn.cursor()
-            cursor.execute(
+            journeyID = SQLInfo.executeQuery(
                 "INSERT INTO Journeys " +
                 " (startLatitude, startLongitude, startTime) " +
                 " VALUES " +
@@ -142,15 +157,10 @@ while True:
                     longitude + ", " +
                     latitude + ", " +
                     "'" + str(datetime.datetime.now()) + "'" + 
-                "); ")
-            
-            SQLInfo.dbConn.commit()
-            
-            journeyID = cursor.execute('select last_insert_id() from Journeys')
+                "); ", "Journeys")
+
             print("Journey ID:")
             print(journeyID)
-            
-            cursor.close()
                         
             vehicleRecordingState = RecordingState.Moving
             
@@ -162,37 +172,36 @@ while True:
                 " VALUES " +
                 "(" +
                     str(journeyID) + ", " +
-                    str(float(longitude)) + ", " +
-                    str(float(latitude)) + ", " +
+                    str(float(GPSThread.longitude)) + ", " +
+                    str(float(GPSThread.latitude)) + ", " +
                     str(int(SpeedThread.speed)) + ", " +
                     str(int(RPMThread.RPM)) + ", " +
                     "'" + str(datetime.datetime.now()) + "'" +
                 "); ")
             
-            cursor.execute(
+            SQLInfo.executeQuery(
                 "INSERT INTO JourneyDetails " +
                 " (journeyID, latitude, longitude, speed, RPM, time) " +
                 " VALUES " +
                 "(" +
                     str(journeyID) + ", " +
-                    str(float(longitude)) + ", " +
-                    str(float(latitude)) + ", " +
+                    str(float(GPSThread.longitude)) + ", " +
+                    str(float(GPSThread.latitude)) + ", " +
                     str(int(SpeedThread.speed)) + ", " +
                     str(int(RPMThread.RPM)) + ", " +
                     "'" + str(datetime.datetime.now()) + "'" +
                 "); ")
-            
-            SQLInfo.dbConn.commit()
-            cursor.close()
-            
+                        
             if RPMThread.RPM > 3000:
                 try:
-                    speechLock.acquire()
+                    speechLock.acquire() 
                 finally:
                     highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
-                    highRPMVoiceThread.start()            
+                    highRPMVoiceThread.start()             
                 
             if SpeedThread.speed > GPSThread.speedLimit:
+                excessSpeedOutput = True
+
                 try:
                     speechLock.acquire()
                 finally:
@@ -207,8 +216,8 @@ while True:
                     " VALUES " +
                     "(" +
                     str(journeyID) + ", " +
-                    str(float(longitude)) + ", " +
-                    str(float(latitude)) + ", " +
+                    str(float(GPSThread.longitude)) + ", " +
+                    str(float(GPSThread.latitude)) + ", " +
                     str(int(SpeedThread.speed)) + ", " +
                     str(int(GPSThread.speedLimit)) + ", " +
                     str(int(RPMThread.RPM)) + ", " +
@@ -216,7 +225,7 @@ while True:
 
                 SQLInfo.dbConn.commit()
                 cursor.close()
-                
-                sleep(1)
+
+                excessSpeedOutput = False
 
         sleep(2) 
