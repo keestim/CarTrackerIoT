@@ -136,7 +136,8 @@ SpeedThread = SpeedDataThread()
 vehicleRecordingState = RecordingState.Init
 journeyID = 0
 
-voiceThread = TextToSpeech("Welcome to Car Tracker I O T Device")
+voiceThread = TextToSpeech("Welcome. to. Car. Tracker. I. O. T. Device.")
+
 voiceThread.start()
 
 while True:
@@ -206,13 +207,11 @@ while True:
             cursor.close()
             
             if RPMThread.RPM > 3000:
-                highRPMVoiceThread = TextToSpeech("High RPM. Consider choosing a higher gear")
+                highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
                 highRPMVoiceThread.start()            
             
             if SpeedThread.speed > GPSThread.speedLimit:
-                speedLimitVoiceThread = TextToSpeech(
-                    "Speed Limit is: " + num2words(GPSThread.speedLimit) + "." +
-                    "You exceeding it by: " + num2words(SpeedThread.speed - GPSThread.speedLimit))
+                speedLimitVoiceThread = TextToSpeech("Exceeding. Speed. Limit.")
                 
                 speedLimitVoiceThread.start()
                 
