@@ -205,7 +205,7 @@ while True:
             SQLInfo.dbConn.commit()
             cursor.close()
             
-            if RPMThread.RPM > 4000:
+            if RPMThread.RPM > 3000:
                 highRPMVoiceThread = TextToSpeech("High RPM. Consider choosing a higher gear")
                 highRPMVoiceThread.start()            
             

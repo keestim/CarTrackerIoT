@@ -84,7 +84,8 @@ class Speed(OBDData):
 
     def getProcessedValue(self, dataArray):
         if dataArray is not None:
-            return dataArray[1]
+            if len(dataArray) >= 2:
+                return dataArray[1]
 
 
 class RPM(OBDData):
@@ -92,5 +93,6 @@ class RPM(OBDData):
         super().__init__(lock, serialPort, '010C', 2)
 
     def getProcessedValue(self, dataArray):
-        return (256 * dataArray[1] + dataArray[2])/4
+        if len(dataArray) >= 3:
+            return (256 * dataArray[1] + dataArray[2])/4
 
