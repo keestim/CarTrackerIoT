@@ -17,6 +17,8 @@ import enum
 
 sharedLock = threading.Lock()
 
+speechLock = threading.Lock()
+
 class TextToSpeech(Thread):
     def __init__(self, inputText):
         super(TextToSpeech, self).__init__()
@@ -26,6 +28,8 @@ class TextToSpeech(Thread):
         cmd_beg= 'espeak '
         cmd_end= ' 2>/dev/null' # To dump the std errors to /dev/null
         call([cmd_beg + '"' + self.outputText + '"' + cmd_end], shell=True)
+        sleep(2)
+        speechLock.release()  
 
 class RecordingState(enum.Enum):
     Init = 1
@@ -182,13 +186,18 @@ while True:
             cursor.close()
             
             if RPMThread.RPM > 3000:
-                highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
-                highRPMVoiceThread.start()            
-            
-            if SpeedThread.speed > GPSThread.speedLimit:
-                speedLimitVoiceThread = TextToSpeech("Exceeding. Speed. Limit.")
+                try:
+                    speechLock.acquire()
+                finally:
+                    highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
+                    highRPMVoiceThread.start()            
                 
-                speedLimitVoiceThread.start()
+            if SpeedThread.speed > GPSThread.speedLimit:
+                try:
+                    speechLock.acquire()
+                finally:
+                    speedLimitVoiceThread = TextToSpeech("Exceeding. Speed. Limit.")
+                    speedLimitVoiceThread.start()
                 
                 cursor = SQLInfo.dbConn.cursor()
 
