@@ -142,7 +142,6 @@ vehicleRecordingState = RecordingState.Init
 journeyID = 0
 
 voiceThread = TextToSpeech("Welcome. to. Car. Tracker. I. O. T. Device.")
-
 voiceThread.start()
 
 while True:
