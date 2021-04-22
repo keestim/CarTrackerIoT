@@ -30,24 +30,32 @@ def AllowOBDSpeedRequest():
 def AllowOBDRPMRequest():
     RPMThread.canRequestRPM  = True
 
+#based off: https://learn.sparkfun.com/tutorials/python-programming-tutorial-getting-started-with-the-raspberry-pi/experiment-1-digital-input-and-output
 class LEDAvgRPMThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.start()
+        
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
 
         self.highRPMPin = 17
         self.lowRPMPin = 19
         self.idleRPMPin = 26
+        
+        GPIO.setup(self.highRPMPin ,GPIO.OUT)
+        GPIO.setup(self.lowRPMPin,GPIO.OUT)
+        GPIO.setup(self.idleRPMPin,GPIO.OUT)
 
         self.RPMValue = 0
 
     def killLights(self):
-        GPIO.output(highRPMPin, GPIO.LOW)   
-        GPIO.output(lowRPMPin, GPIO.LOW)    
-        GPIO.output(idleRPMPin, GPIO.LOW)     
+        GPIO.output(self.highRPMPin, GPIO.LOW)   
+        GPIO.output(self.lowRPMPin, GPIO.LOW)    
+        GPIO.output(self.idleRPMPin, GPIO.LOW)     
     
     def turnOnLight(self, pinNum):
-        GPIO.output(highRPMPin, GPIO.HIGH)   
+        GPIO.output(pinNum, GPIO.HIGH)   
 
     def getAvgRPMValue(self):
         RPMData = SQLInfo.getResultQuery(
@@ -68,7 +76,7 @@ class LEDAvgRPMThread(Thread):
             "   ON " + 
             "   JourneyDetails.journeyID = MaxTimeSelection.journeyID " +
             "   HAVING " +
-            "   JourneyDetails.time >= DATE_SUB(MaxTimeSelection.maxTime, INTERVAL 1 DAY_MINUTE)) " +
+            "   JourneyDetails.time >= DATE_SUB(MaxTimeSelection.maxTime, INTERVAL 30 DAY_SECOND)) " +
             "   AS TimedRPMSubset " +
             "   GROUP BY " +
             "   TimedRPMSubset.journeyID" + 
@@ -79,14 +87,14 @@ class LEDAvgRPMThread(Thread):
     def run(self):
         while True:
             self.RPMValue = self.getAvgRPMValue()
-            killLights()
+            self.killLights()
 
-            if self.RPMValue <= 800:
-                turnOnLight(idleRPMPin)
-            elif self.RPMValue <= 2200:
-                turnOnLight(lowRPMPin)
+            if self.RPMValue <= 1000:
+                self.turnOnLight(self.idleRPMPin)
+            elif self.RPMValue <= 2300:
+                self.turnOnLight(self.lowRPMPin)
             else:
-                turnOnLight(highRPMPin)
+                self.turnOnLight(self.highRPMPin)
 
             sleep(4)
 
