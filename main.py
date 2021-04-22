@@ -48,7 +48,7 @@ class LEDAvgRPMThread(Thread):
         GPIO.output(highRPMPin, GPIO.HIGH)   
 
     def getAvgRPMValue(self):
-        print(SQLInfo.getAvgRPMValue(
+        print(SQLInfo.getResultQuery(
             " SELECT TimedRPMSubset.journeyID, AVG(TimedRPMSubset.RPM) " +
             " FROM ( " +
             "   SELECT " + 
@@ -73,7 +73,7 @@ class LEDAvgRPMThread(Thread):
 
     def run(self):
         while True:
-            getAvgRPMValue()
+            self.getAvgRPMValue()
 
             sleep(4)
 
