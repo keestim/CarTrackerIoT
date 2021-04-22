@@ -17,14 +17,16 @@ import enum
 import time
 
 sharedLock = threading.Lock()
-
 speechLock = threading.Lock()
 
 excessRPMOutput = False
 excessSpeedOutput = False
 
-canRequestSpeed = True
-canRequestRPM = True
+def AllowOBDSpeedRequest():
+    SpeedThread.canRequestSpeed = True
+
+def AllowOBDRPMRequest():
+    RPMThread.canRequestRPM  = True
 
 class TextToSpeech(Thread):
     def __init__(self, inputText):
@@ -66,7 +68,9 @@ class GPSDataThread(Thread):
         while True:
             self.coordinates = self.getGPSCoordinates()
             coordinates_values = GPSThread.coordinates.split(",")
-
+            
+            print(coordinates_values)
+            
             self.longitude = coordinates_values[0]
             self.latitude = coordinates_values[1]
 
@@ -81,18 +85,21 @@ class RPMDataThread(Thread):
         self.RPMReaderObj = RPM(sharedLock, '/dev/rfcomm0')
         self.RPM = 0
         
+        self.canRequestRPM = True
+        
+        sleep(1)
         self.start()
         
     def run(self):
         while True:
-            if canRequestRPM:
+            if self.canRequestRPM:
                 tempRPM = self.RPMReaderObj.requestSerialData()
                 sleep(0.2)
                 self.RPMReaderObj.sharedLock.release()
                 
                 if (tempRPM != "") and (tempRPM is not None) and not excessRPMOutput:
                     self.RPM = tempRPM
-                    canRequestRPM = False
+                    self.canRequestRPM = False
                     timer = threading.Timer(0.5, AllowOBDRPMRequest)
                     timer.start()
 
@@ -103,18 +110,20 @@ class SpeedDataThread(Thread):
         self.SpeedReaderObj = Speed(sharedLock, '/dev/rfcomm0')
         self.speed = 0
         
+        self.canRequestSpeed = True
+        
         self.start()
         
     def run(self):
         while True:
-            if canRequestSpeed:
+            if self.canRequestSpeed:
                 tempSpeed = self.SpeedReaderObj.requestSerialData()
                 sleep(0.2)
                 self.SpeedReaderObj.sharedLock.release()            
                 
                 if (tempSpeed != "") and (tempSpeed is not None) and not excessSpeedOutput:
                     self.speed = tempSpeed
-                    canRequestSpeed = False
+                    self.canRequestSpeed = False
                     timer = threading.Timer(0.5, AllowOBDSpeedRequest)
                     timer.start()
 
@@ -125,12 +134,6 @@ def persistDataToDB(dbConn, GPSString, Speed, RPM):
         cusrsor.execute()
         dbConn.commit()
         cursor.close()
-
-def AllowOBDSpeedRequest():
-    canRequestSpeed = True
-
-def AllowOBDRPMRequest():
-    canRequestRPM  = True
 
 SQLInfo = SQLConnection("SQLInfo.txt")
      
