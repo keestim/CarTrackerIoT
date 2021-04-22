@@ -18,9 +18,6 @@ class GPSReader:
         decimalValue = rawValue/100.00
         degrees = int(decimalValue)
 
-        #what is mm_mmmm
-        #something to do with rounding!
-
         mm_mmmm = (decimalValue - int(decimalValue))/0.6
         position = degrees + mm_mmmm
         position = "%.4f" %(position)

@@ -18,7 +18,11 @@ import RPi.GPIO as GPIO
 import enum
 import time
 
+#locks for program
+#sharedLock is for OBD 
 sharedLock = threading.Lock()
+
+#speechLock is used by TextToSpeech thread
 speechLock = threading.Lock()
 
 excessSpeedOutput = False
@@ -177,6 +181,8 @@ class RPMDataThread(Thread):
         self.RPMReaderObj = RPM(sharedLock, '/dev/rfcomm0')
         self.RPM = 0
         
+        #This allows all OBD reader threads to have a better chance at being able to read and write data
+        #Each thread is essentially forced to wait 0.5 seconds after receiving data, before it can request data again
         self.canRequestRPM = True
         
         sleep(1)
@@ -190,6 +196,10 @@ class RPMDataThread(Thread):
             if self.canRequestRPM:
                 tempRPM = self.RPMReaderObj.requestSerialData()
                 sleep(0.2)
+
+                #after receiving data, and waiting 0.2 seconds
+                #other threads about able to acquire the lock
+                #with provides them exclusive access to the OBD read functionality
                 self.RPMReaderObj.sharedLock.release()
                 
                 if (tempRPM != "") and (tempRPM is not None):
@@ -208,6 +218,8 @@ class SpeedDataThread(Thread):
         self.SpeedReaderObj = Speed(sharedLock, '/dev/rfcomm0')
         self.speed = 0
         
+        #This allows all OBD reader threads to have a better chance at being able to read and write data
+        #Each thread is essentially forced to wait 0.5 seconds after receiving data, before it can request data again
         self.canRequestSpeed = True
         
         self.start()
@@ -220,6 +232,10 @@ class SpeedDataThread(Thread):
             if self.canRequestSpeed:
                 tempSpeed = self.SpeedReaderObj.requestSerialData()
                 sleep(0.2)
+
+                #after receiving data, and waiting 0.2 seconds
+                #other threads about able to acquire the lock
+                #with provides them exclusive access to the OBD read functionality
                 self.SpeedReaderObj.sharedLock.release()            
                 
                 if (tempSpeed != "") and (tempSpeed is not None) and not excessSpeedOutput:

@@ -38,7 +38,6 @@ class OBDData:
             #i.e. prevents speed thread from receiving rpm messages
             self.sharedLock.acquire()
         finally:
-            
             try:
                 #need to encode message as byte type, as it's a serial message
                 self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
@@ -47,8 +46,6 @@ class OBDData:
                 print("Serial Connection unable to write!")
             finally:
                 time.sleep(1)
-            
-                #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
                 msgComponents = ""
                 
                 try:
