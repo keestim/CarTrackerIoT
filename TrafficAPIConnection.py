@@ -16,8 +16,10 @@ def GetSpeedLimit(CoordinatesString):
             map_json_data = response.json()
 
             if response.status_code == 200:
-                speedLimit = float(map_json_data["addresses"][0]["address"]["speedLimit"].replace("KPH", ""))
-                return speedLimit
+                try:
+                    speedLimit = float(map_json_data["addresses"][0]["address"]["speedLimit"].replace("KPH", ""))
+                finally:
+                    return speedLimit
             else:
                 print("api request failed!")
 

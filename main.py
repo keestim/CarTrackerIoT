@@ -156,8 +156,8 @@ while True:
                 " (startLatitude, startLongitude, startTime) " +
                 " VALUES " +
                 "(" +
-                    longitude + ", " +
-                    latitude + ", " +
+                    GPSThread.longitude + ", " +
+                    GPSThread.latitude + ", " +
                     "'" + str(datetime.datetime.now()) + "'" + 
                 "); ", "Journeys")
 
@@ -202,6 +202,9 @@ while True:
                     highRPMVoiceThread.start()             
                 
             if SpeedThread.speed > GPSThread.speedLimit:
+                print("Speed LIMIT!!!!")
+                print(GPSThread.speedLimit)
+                
                 excessSpeedOutput = True
 
                 try:
