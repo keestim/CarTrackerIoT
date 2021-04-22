@@ -38,6 +38,7 @@ class LEDAvgRPMThread(Thread):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
+        #define pins for the various LEDs
         self.highRPMPin = 17
         self.lowRPMPin = 19
         self.idleRPMPin = 26
@@ -49,6 +50,7 @@ class LEDAvgRPMThread(Thread):
         self.RPMValue = 0
 
     def killLights(self):
+        #turn off all lights
         GPIO.output(self.highRPMPin, GPIO.LOW)   
         GPIO.output(self.lowRPMPin, GPIO.LOW)    
         GPIO.output(self.idleRPMPin, GPIO.LOW)     
@@ -178,6 +180,9 @@ class SpeedDataThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
+
+        #/dev/rfcomm0 I've configure the raspberry pi to communicate with the OBD sensor with
+        #/dev/rfcomm0 is bound to the MAC address of the OBD device
         self.SpeedReaderObj = Speed(sharedLock, '/dev/rfcomm0')
         self.speed = 0
         
@@ -211,10 +216,10 @@ def persistDataToDB(dbConn, GPSString, Speed, RPM):
 
 SQLInfo = SQLConnection("SQLInfo.txt")
      
+#start all of the threads
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
 SpeedThread = SpeedDataThread()
-
 LEDRPMThread = LEDAvgRPMThread()
 
 vehicleRecordingState = RecordingState.Init
@@ -225,7 +230,8 @@ voiceThread.start()
 
 while True:
     if GPSThread.coordinates != "" and GPSThread.coordinates is not None:
-     
+
+        #the Journey record will start once the vehicle start moving
         if vehicleRecordingState == RecordingState.Init and SpeedThread.speed > 0:
             journeyID = SQLInfo.executeQuery(
                 "INSERT INTO Journeys " +
@@ -240,8 +246,10 @@ while True:
             print("Journey ID:")
             print(journeyID)
                         
+            #changes state to Moving
             vehicleRecordingState = RecordingState.Moving
-            
+
+        #whilst in the Moving state, it will keep recording vehicle data   
         elif (vehicleRecordingState == RecordingState.Moving):
             cursor = SQLInfo.dbConn.cursor()
             
@@ -257,7 +265,8 @@ while True:
                     str(int(RPMThread.RPM)) + ", " +
                     "'" + str(datetime.datetime.now()) + "'" +
                 "); ")
-                        
+
+            #when RPM exceeds 3000 RPM (i.e. High RPM)
             if RPMThread.RPM > 3000:
                 try:
                     speechLock.acquire() 
@@ -265,6 +274,7 @@ while True:
                     highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
                     highRPMVoiceThread.start()             
                 
+            #when vehicle speed exceeds speed limit
             if SpeedThread.speed > GPSThread.speedLimit:                
                 excessSpeedOutput = True
 
@@ -294,4 +304,5 @@ while True:
 
                 excessSpeedOutput = False
 
+        #sleep for 2 seconds, so that data isn't constantly recorded to database
         sleep(2) 
