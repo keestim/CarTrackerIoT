@@ -39,6 +39,8 @@ class LEDAvgRPMThread(Thread):
         self.lowRPMPin = 19
         self.idleRPMPin = 26
 
+        self.RPMValue = 0
+
     def killLights(self):
         GPIO.output(highRPMPin, GPIO.LOW)   
         GPIO.output(lowRPMPin, GPIO.LOW)    
@@ -72,11 +74,19 @@ class LEDAvgRPMThread(Thread):
             "   TimedRPMSubset.journeyID" + 
             "   LIMIT 1")
 
-        print(RPMData[0][0])
+        return RPMData[0][1]
 
     def run(self):
         while True:
-            self.getAvgRPMValue()
+            self.RPMValue = self.getAvgRPMValue()
+            killLights()
+
+            if self.RPMValue <= 800:
+                turnOnLight(idleRPMPin)
+            elif self.RPMValue <= 2200:
+                turnOnLight(lowRPMPin)
+            else:
+                turnOnLight(highRPMPin)
 
             sleep(4)
 
