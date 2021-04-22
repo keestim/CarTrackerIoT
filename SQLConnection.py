@@ -35,3 +35,16 @@ class SQLConnection:
         cursor.close()
 
         return returnStr
+
+    def getResultQuery(self, queryStr):
+        cursor = self.dbConn.cursor()     
+        cursor.execute(queryStr)
+            
+        queryResultArr = []
+
+        for db in cursor:
+            queryResultArr.append(db) 
+
+        cursor.close()
+
+        return queryResultArr

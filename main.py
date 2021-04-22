@@ -13,6 +13,8 @@ import logging
 import datetime
 from num2words import num2words
 
+import RPi.GPIO as GPIO
+
 import enum
 import time
 
@@ -27,6 +29,53 @@ def AllowOBDSpeedRequest():
 
 def AllowOBDRPMRequest():
     RPMThread.canRequestRPM  = True
+
+class LEDAvgRPMThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.start()
+
+        self.highRPMPin = 17
+        self.lowRPMPin = 19
+        self.idleRPMPin = 26
+
+    def killLights(self):
+        GPIO.output(highRPMPin, GPIO.LOW)   
+        GPIO.output(lowRPMPin, GPIO.LOW)    
+        GPIO.output(idleRPMPin, GPIO.LOW)     
+    
+    def turnOnLight(self, pinNum):
+        GPIO.output(highRPMPin, GPIO.HIGH)   
+
+    def getAvgRPMValue(self):
+        print(SQLInfo.getAvgRPMValue(
+            " SELECT TimedRPMSubset.journeyID, AVG(TimedRPMSubset.RPM) " +
+            " FROM ( " +
+            "   SELECT " + 
+            "       JourneyDetails.journeyID, " + 
+            "       JourneyDetails.RPM, " +
+            "       JourneyDetails.time, " +
+            "       MaxTimeSelection.maxTime " +
+            "   FROM " +
+            "   JourneyDetails " +
+            "   INNER JOIN ( " +
+            "   SELECT " + 
+            "   MAX(JourneyDetails.journeyID) as journeyID, MAX(JourneyDetails.time) as maxTime " + 
+            "   FROM " + 
+            "   JourneyDetails) AS MaxTimeSelection " + 
+            "   ON " + 
+            "   JourneyDetails.journeyID = MaxTimeSelection.journeyID " +
+            "   HAVING " +
+            "   JourneyDetails.time >= DATE_SUB(MaxTimeSelection.maxTime, INTERVAL 1 DAY_MINUTE)) " +
+            "   AS TimedRPMSubset " +
+            "   GROUP BY " +
+            "   TimedRPMSubset.journeyID;"))   
+
+    def run(self):
+        while True:
+            getAvgRPMValue()
+
+            sleep(4)
 
 class TextToSpeech(Thread):
     def __init__(self, inputText):
@@ -140,6 +189,8 @@ SQLInfo = SQLConnection("SQLInfo.txt")
 GPSThread = GPSDataThread()
 RPMThread = RPMDataThread()
 SpeedThread = SpeedDataThread()
+
+LEDRPMThread = LEDAvgRPMThread()
 
 vehicleRecordingState = RecordingState.Init
 journeyID = 0
