@@ -8,6 +8,7 @@ class SQLConnection:
         print(self.dbConn)
     
     def getConnection(self, authFilePath):
+        #gets SQL info from an external text file
         f = open(authFilePath, "r")
         
         detailsArray = f.read().split("\t")
@@ -29,6 +30,7 @@ class SQLConnection:
         
         returnStr = ""
 
+        #gets the last primary key from table, if the table is provided
         if (targetTable != ""):
             returnStr = cursor.execute('select last_insert_id() from ' + targetTable)
             

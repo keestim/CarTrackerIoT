@@ -24,11 +24,10 @@ speechLock = threading.Lock()
 excessRPMOutput = False
 excessSpeedOutput = False
 
-def AllowOBDSpeedRequest():
-    SpeedThread.canRequestSpeed = True
-
-def AllowOBDRPMRequest():
-    RPMThread.canRequestRPM  = True
+#the two records states the program can be in
+class RecordingState(enum.Enum):
+    Init = 1
+    Moving = 2
 
 #based off: https://learn.sparkfun.com/tutorials/python-programming-tutorial-getting-started-with-the-raspberry-pi/experiment-1-digital-input-and-output
 class LEDAvgRPMThread(Thread):
@@ -57,6 +56,7 @@ class LEDAvgRPMThread(Thread):
     def turnOnLight(self, pinNum):
         GPIO.output(pinNum, GPIO.HIGH)   
 
+    #gets the average RPM value for the last 30 seconds of the current journey 
     def getAvgRPMValue(self):
         RPMData = SQLInfo.getResultQuery(
             " SELECT TimedRPMSubset.journeyID, AVG(TimedRPMSubset.RPM) " +
@@ -98,6 +98,8 @@ class LEDAvgRPMThread(Thread):
 
             sleep(4)
 
+#thread for TextToSpeech, with thread locking implementation 
+#to prevent multiple text to speech messages at once
 class TextToSpeech(Thread):
     def __init__(self, inputText):
         super(TextToSpeech, self).__init__()
@@ -109,10 +111,6 @@ class TextToSpeech(Thread):
         call([cmd_beg + '"' + self.outputText + '"' + cmd_end], shell=True)
         sleep(0.2)
         speechLock.release()  
-
-class RecordingState(enum.Enum):
-    Init = 1
-    Moving = 2
 
 class GPSDataThread(Thread):
     def __init__(self):
@@ -127,7 +125,7 @@ class GPSDataThread(Thread):
     def getGPSCoordinates(self):
         outputCoordinates = ""
         
-        #loops until an actual value is received!
+        #loops until an actual value is received
         while (outputCoordinates == ""):
             outputCoordinates = self.GPSObj.getGPSString()
             sleep(0.5)
@@ -159,6 +157,9 @@ class RPMDataThread(Thread):
         
         sleep(1)
         self.start()
+
+    def AllowOBDRPMRequest(self):
+        self.canRequestRPM  = True
         
     def run(self):
         while True:
@@ -170,7 +171,7 @@ class RPMDataThread(Thread):
                 if (tempRPM != "") and (tempRPM is not None) and not excessRPMOutput:
                     self.RPM = tempRPM
                     self.canRequestRPM = False
-                    timer = threading.Timer(0.5, AllowOBDRPMRequest)
+                    timer = threading.Timer(0.5, self.AllowOBDRPMRequest)
                     timer.start()
 
 class SpeedDataThread(Thread):
@@ -183,6 +184,9 @@ class SpeedDataThread(Thread):
         self.canRequestSpeed = True
         
         self.start()
+
+    def AllowOBDSpeedRequest(self):
+        self.canRequestSpeed = True
         
     def run(self):
         while True:
@@ -194,7 +198,7 @@ class SpeedDataThread(Thread):
                 if (tempSpeed != "") and (tempSpeed is not None) and not excessSpeedOutput:
                     self.speed = tempSpeed
                     self.canRequestSpeed = False
-                    timer = threading.Timer(0.5, AllowOBDSpeedRequest)
+                    timer = threading.Timer(0.5, self.AllowOBDSpeedRequest)
                     timer.start()
 
 
@@ -240,18 +244,6 @@ while True:
             
         elif (vehicleRecordingState == RecordingState.Moving):
             cursor = SQLInfo.dbConn.cursor()
-
-            print("INSERT INTO JourneyDetails " +
-                " (journeyID, latitude, longitude, speed, RPM, time) " +
-                " VALUES " +
-                "(" +
-                    str(journeyID) + ", " +
-                    str(float(GPSThread.longitude)) + ", " +
-                    str(float(GPSThread.latitude)) + ", " +
-                    str(int(SpeedThread.speed)) + ", " +
-                    str(int(RPMThread.RPM)) + ", " +
-                    "'" + str(datetime.datetime.now()) + "'" +
-                "); ")
             
             SQLInfo.executeQuery(
                 "INSERT INTO JourneyDetails " +
@@ -273,10 +265,7 @@ while True:
                     highRPMVoiceThread = TextToSpeech("High. R.P.M... Choose. higher. gear.")
                     highRPMVoiceThread.start()             
                 
-            if SpeedThread.speed > GPSThread.speedLimit:
-                print("Speed LIMIT!!!!")
-                print(GPSThread.speedLimit)
-                
+            if SpeedThread.speed > GPSThread.speedLimit:                
                 excessSpeedOutput = True
 
                 try:

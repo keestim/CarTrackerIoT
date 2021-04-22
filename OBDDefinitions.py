@@ -13,11 +13,11 @@ class OBDData:
 
         #Thread locking info
         #https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php
-        #refer to it as "shared" lock!
         
         self.value = 0
         self.sharedLock = lock
 
+    #message data is hexadecimal form, need to convert to decimal values
     def convertHexValues(self, msgComponents):
         hexValueArray = []
         
@@ -34,10 +34,13 @@ class OBDData:
 
     def requestSerialData(self):
         try:
+            #lock serial write and read, so only on thread can send and receive messages at once
+            #i.e. prevents speed thread from receiving rpm messages
             self.sharedLock.acquire()
         finally:
             
             try:
+                #need to encode message as byte type, as it's a serial message
                 self.serialConnection.write(self.pidCode.encode('utf_8') + b'\r\n')
                 
             except:
@@ -46,11 +49,6 @@ class OBDData:
                 time.sleep(1)
             
                 #https://stackoverflow.com/questions/17553543/pyserial-non-blocking-read-loop
-                
-                #need to handle:
-                #File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
-                #OSError: [Errno 5] Input/output error
-                #ADD TRY-EXCEPTION BLOCK!
                 msgComponents = ""
                 
                 try:
@@ -75,11 +73,11 @@ class OBDData:
                     sleep(0.5)
 
                     return self.getProcessedValue(self.convertHexValues(msgComponents))
-                                 
 
-
+#child class where the actual implementation occurs                     
 class Speed(OBDData):
     def __init__(self, lock, serialPort):
+        #010D is the OBD pid for Vehicle Speed
         super().__init__(lock, serialPort, '010D', 1)
 
     def getProcessedValue(self, dataArray):
@@ -90,10 +88,12 @@ class Speed(OBDData):
 
 class RPM(OBDData):
     def __init__(self, lock, serialPort):
+        #010C is the OBD pid for RPM
         super().__init__(lock, serialPort, '010C', 2)
 
     def getProcessedValue(self, dataArray):
         if dataArray is not None:
+            #formula for processing serial array into RPM value
             if len(dataArray) >= 3:
                 return (256 * dataArray[1] + dataArray[2])/4
 

@@ -3,6 +3,8 @@ from time import sleep
 import sys
 import asyncio
 
+#code modified from:
+#https://www.engineersgarage.com/microcontroller-projects/articles-raspberry-pi-neo-6m-gps-module-interfacing/
 class GPSReader:
     def __init__(self, serialPort):
         self.serialPort = serialPort
@@ -43,6 +45,7 @@ class GPSReader:
             latitude = self.convertToDegrees(float(NMEALatitude))
             longitude = self.convertToDegrees(float(NMEALongitude))
             
+            #latitude and longitude are mutliplied by -1, depending if the gps is location S or W, respectively
             latitude *= (1 if (self.NMEABuffer[4] == "W") else -1)
             longitude *= (1 if (self.NMEABuffer[2] == "S") else -1)
             
