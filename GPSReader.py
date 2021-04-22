@@ -49,6 +49,10 @@ class GPSReader:
             latitude *= (1 if (self.NMEABuffer[4] == "W") else -1)
             longitude *= (1 if (self.NMEABuffer[2] == "S") else -1)
             
+            #need to clear the serial buffer, due large amount of messages
+            #Due to :self.serialConnection.readline()
+            #only the last message in the serial buffer is read
+            #Hence, same recorded location will be logged many times, if buffer isn't cleared!
             self.serialConnection.reset_output_buffer()
             self.serialConnection.reset_input_buffer()
 
