@@ -21,7 +21,6 @@ import time
 sharedLock = threading.Lock()
 speechLock = threading.Lock()
 
-excessRPMOutput = False
 excessSpeedOutput = False
 
 #the two records states the program can be in
@@ -30,6 +29,8 @@ class RecordingState(enum.Enum):
     Moving = 2
 
 #based off: https://learn.sparkfun.com/tutorials/python-programming-tutorial-getting-started-with-the-raspberry-pi/experiment-1-digital-input-and-output
+#A class with a parent class of Thread was created to enable better system responsiveness 
+#If all of the system functionality was synchronous, poor performance and significant issues would occur
 class LEDAvgRPMThread(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -56,10 +57,16 @@ class LEDAvgRPMThread(Thread):
         GPIO.output(self.idleRPMPin, GPIO.LOW)     
     
     def turnOnLight(self, pinNum):
+        #turn on the light for a specific input PIN number
         GPIO.output(pinNum, GPIO.HIGH)   
 
     #gets the average RPM value for the last 30 seconds of the current journey 
     def getAvgRPMValue(self):
+        #query first first gets the maximum journey id and the last time that was recorded for that journey
+        #then all journeyDetails records are collected that share that journey ID AND 
+        #have a recorded time LESS THAN OR EQUAL TO 30 seconds, that this maximum time
+        #then the average RPM of that collect data set is calculated and returned
+        
         RPMData = SQLInfo.getResultQuery(
             " SELECT TimedRPMSubset.journeyID, AVG(TimedRPMSubset.RPM) " +
             " FROM ( " +
@@ -69,19 +76,19 @@ class LEDAvgRPMThread(Thread):
             "       JourneyDetails.time, " +
             "       MaxTimeSelection.maxTime " +
             "   FROM " +
-            "   JourneyDetails " +
+            "       JourneyDetails " +
             "   INNER JOIN ( " +
-            "   SELECT " + 
-            "   MAX(JourneyDetails.journeyID) as journeyID, MAX(JourneyDetails.time) as maxTime " + 
-            "   FROM " + 
-            "   JourneyDetails) AS MaxTimeSelection " + 
+            "       SELECT " + 
+            "           MAX(JourneyDetails.journeyID) as journeyID, MAX(JourneyDetails.time) as maxTime " + 
+            "       FROM " + 
+            "           JourneyDetails) AS MaxTimeSelection " + 
             "   ON " + 
-            "   JourneyDetails.journeyID = MaxTimeSelection.journeyID " +
+            "       JourneyDetails.journeyID = MaxTimeSelection.journeyID " +
             "   HAVING " +
-            "   JourneyDetails.time >= DATE_SUB(MaxTimeSelection.maxTime, INTERVAL 30 DAY_SECOND)) " +
+            "       JourneyDetails.time >= DATE_SUB(MaxTimeSelection.maxTime, INTERVAL 30 DAY_SECOND)) " +
             "   AS TimedRPMSubset " +
             "   GROUP BY " +
-            "   TimedRPMSubset.journeyID" + 
+            "       TimedRPMSubset.journeyID" + 
             "   LIMIT 1")
 
         return RPMData[0][1]
@@ -91,10 +98,22 @@ class LEDAvgRPMThread(Thread):
             self.RPMValue = self.getAvgRPMValue()
             self.killLights()
 
+            #state 1: IDLE
+            #all car engines will idle at less than 1000 RPM
+            #and a car would rarely operate at less than 1000 RPM whilst moving
+            #hence, it state will occur when a car is stationary
             if self.RPMValue <= 1000:
                 self.turnOnLight(self.idleRPMPin)
-            elif self.RPMValue <= 2300:
+            #state 2:
+            #econimical
+            #Then will occur when a car is running, such that is will consume the minimal amount of fuel
+            elif self.RPMValue <= 2200:
                 self.turnOnLight(self.lowRPMPin)
+            #state 3:
+            #Aggressive
+            #This state will likely be used when the driver is intending to drive fast
+            #A car generally accelerate faster, then the RPMs are higher
+            #High RPMs correlate to a higher fuel consumption
             else:
                 self.turnOnLight(self.highRPMPin)
 
@@ -128,6 +147,8 @@ class GPSDataThread(Thread):
         outputCoordinates = ""
         
         #loops until an actual value is received
+        #the GPS device won't consistantly return a GPS string,
+        #hence we need to request the serial GPS string, until there is an actual value returned
         while (outputCoordinates == ""):
             outputCoordinates = self.GPSObj.getGPSString()
             sleep(0.5)
@@ -145,6 +166,7 @@ class GPSDataThread(Thread):
             self.latitude = coordinates_values[1]
 
             sleep(0.5)
+            #calls API to get speed limit for specified latitude and longitude
             self.speedLimit = GetSpeedLimit(self.coordinates)
             sleep(1)
             
@@ -170,7 +192,7 @@ class RPMDataThread(Thread):
                 sleep(0.2)
                 self.RPMReaderObj.sharedLock.release()
                 
-                if (tempRPM != "") and (tempRPM is not None) and not excessRPMOutput:
+                if (tempRPM != "") and (tempRPM is not None):
                     self.RPM = tempRPM
                     self.canRequestRPM = False
                     timer = threading.Timer(0.5, self.AllowOBDRPMRequest)
@@ -267,6 +289,10 @@ while True:
                 "); ")
 
             #when RPM exceeds 3000 RPM (i.e. High RPM)
+        
+            #locks are used, to ensure that there is only one text to voice message occur at a time
+            #this prevents the user from being spammed with a constant stream of messages
+            #Which don't provide any benefit over just having one message at a time
             if RPMThread.RPM > 3000:
                 try:
                     speechLock.acquire() 
@@ -275,9 +301,16 @@ while True:
                     highRPMVoiceThread.start()             
                 
             #when vehicle speed exceeds speed limit
-            if SpeedThread.speed > GPSThread.speedLimit:                
+            if SpeedThread.speed > GPSThread.speedLimit:    
+                #excessSpeedOutput is used to prevent a new Speed value to be set
+                #The driver may only be momentarily speed
+                #so by the time this speeding information is recorded, the SpeedThread speed value may be updated
+                #and will now be less than the speed limit       
                 excessSpeedOutput = True
 
+                #locks are used, to ensure that there is only one text to voice message occur at a time
+                #this prevents the user from being spammed with a constant stream of messages
+                #Which don't provide any benefit over just having one message at a time
                 try:
                     speechLock.acquire()
                 finally:
