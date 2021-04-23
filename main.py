@@ -19,7 +19,7 @@ import enum
 import time
 
 #locks for program
-#sharedLock is for OBD 
+#sharedLock is for OBD Readers
 sharedLock = threading.Lock()
 
 #speechLock is used by TextToSpeech thread
@@ -181,8 +181,12 @@ class RPMDataThread(Thread):
         self.RPMReaderObj = RPM(sharedLock, '/dev/rfcomm0')
         self.RPM = 0
         
-        #This allows all OBD reader threads to have a better chance at being able to read and write data
+        #This allows all OBD readers threads to have a better chance at being able to read and write data
         #Each thread is essentially forced to wait 0.5 seconds after receiving data, before it can request data again
+
+        #The OBD readers both communicate through '/dev/rfcomm0'
+        #So both thread object will read and write through the same serial connection
+        #Hence, it's critical that the RPM thread doesn't receive that sent from the Speed Thread and vice versa
         self.canRequestRPM = True
         
         sleep(1)
